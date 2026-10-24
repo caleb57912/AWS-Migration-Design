@@ -39,7 +39,8 @@ This is my final project for INTE 3600. The brief asks for a conceptual design, 
 | Today (on-premises) | Problem |
 |---|---|
 | EHR and patient portal on a single server in the main clinic | One hardware failure takes every clinic offline |
-| Imaging and documents on a local file server | Storage is running out and backups are manual |
+| Documents on a local file server | Storage is running out and backups are manual |
+| X-ray and ultrasound images on an aging on-prem PACS | Images are stuck at one site with no off-site copy |
 | Clinics connect to the main site over the WAN | The main site is a single point of failure |
 | Patching and audits handled by a small IT team | Compliance evidence is slow to produce |
 
@@ -64,32 +65,36 @@ This is my final project for INTE 3600. The brief asks for a conceptual design, 
 │        RDS primary ───── sync ────► RDS standby         │  ◄ Multi-AZ · KMS
 │                                                         │
 └──────────┬───────────────────────────────────┬──────────┘
-           │ VPC endpoint                      │ Site-to-Site VPN
-    S3 (KMS · versioned)                 8 clinic sites
+           │ VPC endpoints                     │ Site-to-Site VPN
+  S3 · AWS HealthImaging                 8 clinic sites
+     (KMS-encrypted)                     DICOM router + imaging devices
            │
     Backup copy ──► us-west-2
 ```
 
-The full draw.io diagram with AWS icons lives in [`diagrams/`](diagrams).
+The full draw.io diagram with AWS icons lives in [`diagrams/`](diagrams). Every foundation and the reason behind it is in the [**Design Plan →**](docs/design-plan.md).
 
 ### Components
 
 | Tier | Services | Role |
 |---|---|---|
+| **Governance** | AWS Organizations, SCPs, AWS Artifact | Separate Prod, Dev, and Security accounts; organization guardrails; the HIPAA BAA |
 | **Edge** | Route 53, CloudFront, AWS WAF | DNS, caching, and filtering of web attacks before they reach the app |
 | **Web / app** | Application Load Balancer, EC2 Auto Scaling | Runs the EHR and patient portal across two AZs, scaling with demand |
 | **Data** | Amazon RDS (Multi-AZ) | Patient records, encrypted with KMS, with automatic failover |
-| **Storage** | Amazon S3 | Imaging and documents, encrypted, versioned, aged to cheaper tiers |
-| **Identity** | IAM Identity Center, IAM roles, MFA | Staff single sign-on, least privilege, no long-lived keys on servers |
-| **Security & monitoring** | CloudTrail, GuardDuty, Security Hub, AWS Config, CloudWatch | Audit trail, threat detection, compliance checks, alarms |
+| **Storage** | Amazon S3 | Documents, encrypted, versioned, retention-locked, aged to cheaper tiers |
+| **Imaging** | AWS HealthImaging, clinic DICOM routers | Managed DICOM image store; routers forward images from clinic devices over encrypted DICOMweb |
+| **Identity** | IAM Identity Center, IAM roles, Amazon Cognito, MFA | Admin single sign-on, least privilege, no long-lived keys on servers, patient portal sign-in |
+| **Security & monitoring** | CloudTrail, GuardDuty, Security Hub, AWS Config, Inspector, Macie, CloudWatch | Audit trail, threat detection, compliance checks, vulnerability scans, PHI discovery, alarms |
 | **Connectivity** | Site-to-Site VPN | Encrypted links from each clinic |
 | **Resilience** | AWS Backup | Scheduled backups with a cross-region copy for disaster recovery |
-| **Migration** | AWS DMS, AWS DataSync | Moves the database and file shares from on-premises |
+| **Migration** | AWS Application Migration Service, AWS DMS, AWS DataSync | Moves the app servers, database, file shares, and imaging archive |
 
 ### Request flow
 
 ```
 Clinic user → Route 53 → CloudFront + WAF → ALB → EC2 (private subnet) → RDS / S3
+Imaging device → Clinic DICOM router → VPN (TLS) → AWS HealthImaging → Web viewer
 ```
 
 ## 🧰 Stack
@@ -101,6 +106,7 @@ Clinic user → Route 53 → CloudFront + WAF → ALB → EC2 (private subnet) �
 | Terraform | Primary IaC: the full design, used for the live deploy | 🔜 Planned |
 | AWS CloudFormation | Network layer, written for comparison | 🔜 Planned |
 | AWS CDK | Network layer, written for comparison | 🔜 Planned |
+| Checkov | IaC security scanning | 🔜 Planned |
 | AWS Budgets + CloudWatch billing alarm | Deploy cost guardrail | 🔜 Planned |
 
 ## 🧭 Roadmap
@@ -114,6 +120,7 @@ Clinic user → Route 53 → CloudFront + WAF → ALB → EC2 (private subnet) �
 | **5 · Present** | Slide deck · Recorded 8–10 minute briefing | Deck and video submitted |
 
 - [x] Repository created
+- [x] Design plan drafted
 - [ ] Phase 1: Design
 - [ ] Phase 2: Diagram
 - [ ] Phase 3: IaC
@@ -127,7 +134,7 @@ Folders fill in as each phase is built.
 | Folder | What's inside |
 |---|---|
 | [`build-log/`](build-log) | **Step-by-step record of the build** |
-| [`docs/`](docs) | Requirements, current state, shared responsibility map |
+| [`docs/`](docs) | Design plan, requirements, shared responsibility map |
 | [`docs/adr/`](docs/adr) | Architecture decision records |
 | [`docs/cost/`](docs/cost) | Pricing Calculator estimate and optimization plan |
 | [`diagrams/`](diagrams) | draw.io source and exported images |
