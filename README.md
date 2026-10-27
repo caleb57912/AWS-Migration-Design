@@ -13,8 +13,8 @@
 
 ---
 
-> ### 📖 Start here: [**Build Log →**](build-log/)
-> Every step I've completed so far, in order, with the decisions, issues and fixes behind each one.
+> ### 👋 Start here: [**00-START-HERE →**](00-START-HERE/)
+> The project in 60 seconds, what to read in order, and the build log: every step I've completed, with the decisions, issues and fixes behind each one.
 >
 > - **Phase 1 Design 🔄** requirements, current state, architecture decisions, cost estimate
 
@@ -129,18 +129,19 @@ Imaging device → Clinic DICOM router → VPN (TLS) → AWS HealthImaging → W
 
 ## 📁 Repository map
 
-Folders fill in as each phase is built.
+Every folder has a README describing what goes in it; the contents fill in as each phase is built.
 
 | Folder | What's inside |
 |---|---|
-| [`build-log/`](build-log) | **Step-by-step record of the build** |
+| [`00-START-HERE/`](00-START-HERE) | **Overview, reading order, and the step-by-step build log** |
 | [`docs/`](docs) | Design plan, requirements, shared responsibility map |
 | [`docs/adr/`](docs/adr) | Architecture decision records |
 | [`docs/cost/`](docs/cost) | Pricing Calculator estimate and optimization plan |
 | [`diagrams/`](diagrams) | draw.io source and exported images |
-| [`iac/terraform/`](iac/terraform) | Full design in Terraform |
+| [`iac/terraform/`](iac/terraform) | Full design in Terraform: bootstrap, modules, and prod / dev / slice environments |
 | [`iac/cloudformation/`](iac/cloudformation) | Network layer in CloudFormation |
 | [`iac/cdk/`](iac/cdk) | Network layer in AWS CDK |
+| [`scripts/`](scripts) | Secret scanning, IaC scanning, and teardown checks I run |
 | [`deploy-evidence/`](deploy-evidence) | Verification results from the live deploy |
 | [`presentation/`](presentation) | Slide deck and speaker notes |
 | [`screenshots/`](screenshots) | Evidence supporting the documentation |
