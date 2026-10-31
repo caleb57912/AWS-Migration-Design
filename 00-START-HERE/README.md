@@ -32,3 +32,4 @@ Each step I completed, in order. Each entry has a short summary; the [deep dives
 | # | Step | Phase | Result |
 |---|---|---|---|
 | 01 | [Repository and design plan](01-repo-and-design-plan.md) | 1 · Design | ✅ Repo created, design plan written |
+| 02 | [Foundation design decisions](02-foundation-design-decisions.md) | 1 · Design | ✅ Accounts through workload placement decided |

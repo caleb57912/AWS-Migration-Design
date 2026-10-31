@@ -16,7 +16,7 @@
 > ### 👋 Start here: [**00-START-HERE →**](00-START-HERE/)
 > The project in 60 seconds, what to read in order, and the build log: every step I've completed, with the decisions, issues and fixes behind each one.
 >
-> - **Phase 1 Design 🔄** requirements, current state, architecture decisions, cost estimate
+> - **Phase 1 Design 🔄** accounts, data classification, regions, network, edge, and workload placement decided; remaining layers in review
 
 ## 🎯 Mission
 
@@ -41,60 +41,70 @@ This is my final project for INTE 3600. The brief asks for a conceptual design, 
 | EHR and patient portal on a single server in the main clinic | One hardware failure takes every clinic offline |
 | Documents on a local file server | Storage is running out and backups are manual |
 | X-ray and ultrasound images on an aging on-prem PACS | Images are stuck at one site with no off-site copy |
-| Clinics connect to the main site over the WAN | The main site is a single point of failure |
+| Clinics connect to the flagship clinic over the WAN | The flagship site is a single point of failure for all eight clinics |
 | Patching and audits handled by a small IT team | Compliance evidence is slow to produce |
 
 ## 🏗️ Target architecture
 
 ```
-                 Clinic staff · Patients
-                           │
-                     Route 53 (DNS)
-                           │
-                 CloudFront + AWS WAF
-                           │
-┌──────────────────── VPC · us-east-1 ────────────────────┐
-│                                                         │
-│        AZ-a                            AZ-b             │
-│   ┌─────────────────────────────────────────────────┐   │
-│   │      Application Load Balancer (public)         │   │
-│   └───────────┬───────────────────────┬─────────────┘   │
-│               │                       │                 │
-│      EC2 app tier (private)   EC2 app tier (private)    │  ◄ Auto Scaling group
-│               │                       │                 │
-│        RDS primary ───── sync ────► RDS standby         │  ◄ Multi-AZ · KMS
-│                                                         │
-└──────────┬───────────────────────────────────┬──────────┘
-           │ VPC endpoints                     │ Site-to-Site VPN
-  S3 · AWS HealthImaging                 8 clinic sites
-     (KMS-encrypted)                     DICOM router + imaging devices
-           │
-    Backup copy ──► us-west-2
+        Patients                                   Remote staff
+           │                                            │
+     Route 53 (DNS)                              Verified Access
+           │                                  (identity + device check)
+   CloudFront + AWS WAF                                 │
+           │ VPC origin                                 │
+┌──────────┴────────── Prod VPC · us-west-2 · 3 AZs ────┴─────────┐
+│                                                                 │
+│  App           Private ALB ──► EHR + portal (EC2 Auto Scaling)  │
+│  Integration   HL7 interface engine                             │
+│  Data          RDS PostgreSQL (Multi-AZ · KMS)                  │
+│                                                                 │
+│  No internet gateway in any VPC that holds PHI                  │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+┌──────────────────────── Network account ────────────────────────┐
+│                                                                 │
+│  Transit Gateway ── Network Firewall ── Egress VPC (NAT)        │
+│                                                                 │
+└──────────┬──────────────────────────────────────────┬───────────┘
+           │ Direct Connect + VPN                     │ Site-to-Site VPN
+     Flagship clinic                            7 other clinics
+           │                                          │
+           └──── Clinic DICOM routers (store-and-forward) ────┐
+                                                              │ STOW-RS
+              Shared Services endpoints ──► AWS HealthImaging · S3
+
+        DR: backups, standby Transit Gateway, and restore target in us-east-1
 ```
 
-The full draw.io diagram with AWS icons lives in [`diagrams/`](diagrams). Every foundation and the reason behind it is in the [**Design Plan →**](docs/design-plan.md).
+Every workload runs in its own account (Prod, Staging, Dev) under an AWS Control Tower landing zone, with logs shipped to a separate Log Archive account. The full draw.io diagram with AWS icons lives in [`diagrams/`](diagrams). Every foundation and the reason behind it is in the [**Design Plan →**](docs/design-plan.md).
 
 ### Components
 
 | Tier | Services | Role |
 |---|---|---|
-| **Governance** | AWS Organizations, SCPs, AWS Artifact | Separate Prod, Dev, and Security accounts; organization guardrails; the HIPAA BAA |
-| **Edge** | Route 53, CloudFront, AWS WAF | DNS, caching, and filtering of web attacks before they reach the app |
-| **Web / app** | Application Load Balancer, EC2 Auto Scaling | Runs the EHR and patient portal across two AZs, scaling with demand |
-| **Data** | Amazon RDS (Multi-AZ) | Patient records, encrypted with KMS, with automatic failover |
-| **Storage** | Amazon S3 | Documents, encrypted, versioned, retention-locked, aged to cheaper tiers |
-| **Imaging** | AWS HealthImaging, clinic DICOM routers | Managed DICOM image store; routers forward images from clinic devices over encrypted DICOMweb |
-| **Identity** | IAM Identity Center, IAM roles, Amazon Cognito, MFA | Admin single sign-on, least privilege, no long-lived keys on servers, patient portal sign-in |
+| **Governance** | AWS Control Tower, Organizations, SCPs, tag policies, AWS Artifact | Eight-account landing zone; region and tagging guardrails; data classification enforced at creation; the HIPAA BAA |
+| **Edge** | Route 53, CloudFront (VPC origins), AWS WAF, Shield Standard | DNS failover, caching, and attack filtering; the load balancer has no public address |
+| **Remote access** | AWS Verified Access, IAM Identity Center | Zero-trust access to the EHR for remote staff, checked per request |
+| **Network** | Transit Gateway, VPC IPAM, Network Firewall, centralized egress and endpoints | One inspected hub for clinic, inter-VPC, and outbound traffic |
+| **Clinic connectivity** | Direct Connect + VPN at the flagship clinic, Site-to-Site VPN at the rest | Encrypted links sized to each clinic's imaging volume |
+| **App** | Private Application Load Balancer, EC2 Auto Scaling | The vendor EHR and its patient portal and radiology module across three AZs |
+| **Integration** | HL7 interface engine on EC2 | Routes clinical messages; fenced off in its own tier |
+| **Data** | Amazon RDS for PostgreSQL (Multi-AZ) | Patient records, encrypted with KMS, with automatic failover |
+| **Imaging** | AWS HealthImaging, clinic DICOM routers | Managed DICOM store; routers cache at each clinic and upload over encrypted DICOMweb |
+| **Storage** | Amazon S3 | Documents: encrypted, versioned, retention-locked, aged to cheaper tiers |
+| **Identity** | IAM Identity Center, IAM roles, Amazon Cognito, ABAC | Admin single sign-on, no long-lived keys, patient portal sign-in, tag-based access to PHI |
 | **Security & monitoring** | CloudTrail, GuardDuty, Security Hub, AWS Config, Inspector, Macie, CloudWatch | Audit trail, threat detection, compliance checks, vulnerability scans, PHI discovery, alarms |
-| **Connectivity** | Site-to-Site VPN | Encrypted links from each clinic |
-| **Resilience** | AWS Backup | Scheduled backups with a cross-region copy for disaster recovery |
+| **Resilience** | AWS Backup | Scheduled backups with a cross-region copy to us-east-1 |
 | **Migration** | AWS Application Migration Service, AWS DMS, AWS DataSync | Moves the app servers, database, file shares, and imaging archive |
 
 ### Request flow
 
 ```
-Clinic user → Route 53 → CloudFront + WAF → ALB → EC2 (private subnet) → RDS / S3
-Imaging device → Clinic DICOM router → VPN (TLS) → AWS HealthImaging → Web viewer
+Patient       → Route 53 → CloudFront + WAF → private ALB → EHR portal (EC2) → RDS / S3
+Remote staff  → Verified Access → private ALB → EHR (EC2) → RDS
+Clinic staff  → Direct Connect or VPN → Transit Gateway → Network Firewall → EHR
+Imaging device → Clinic DICOM router → Direct Connect or VPN → AWS HealthImaging → Web viewer
 ```
 
 ## 🧰 Stack
