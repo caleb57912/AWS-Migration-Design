@@ -16,7 +16,7 @@
 > ### 👋 Start here: [**00-START-HERE →**](00-START-HERE/)
 > The project in 60 seconds, what to read in order, and the build log: every step I've completed, with the decisions, issues and fixes behind each one.
 >
-> - **Phase 1 Design 🔄** accounts, data classification, regions, network, edge, and workload placement decided; remaining layers in review
+> - **Phase 1 Design 🔄** every layer decided and recorded in the design plan; ADRs, cost estimate, and diagram next
 
 ## 🎯 Mission
 
@@ -57,7 +57,7 @@ This is my final project for INTE 3600. The brief asks for a conceptual design, 
 │                                                                 │
 │  App           Private ALB ──► EHR + portal (EC2 Auto Scaling)  │
 │  Integration   HL7 interface engine                             │
-│  Data          RDS PostgreSQL (Multi-AZ · KMS)                  │
+│  Data          Aurora PostgreSQL (3 AZs · KMS)                  │
 │                                                                 │
 │  No internet gateway in any VPC that holds PHI                  │
 └────────────────────────────────┬────────────────────────────────┘
@@ -74,7 +74,7 @@ This is my final project for INTE 3600. The brief asks for a conceptual design, 
                                                               │ STOW-RS
               Shared Services endpoints ──► AWS HealthImaging · S3
 
-        DR: backups, standby Transit Gateway, and restore target in us-east-1
+        DR: pilot light in us-east-1 (Aurora Global Database, standby TGW, AMIs)
 ```
 
 Every workload runs in its own account (Prod, Staging, Dev) under an AWS Control Tower landing zone, with logs shipped to a separate Log Archive account. The full draw.io diagram with AWS icons lives in [`diagrams/`](diagrams). Every foundation and the reason behind it is in the [**Design Plan →**](docs/design-plan.md).
@@ -90,19 +90,19 @@ Every workload runs in its own account (Prod, Staging, Dev) under an AWS Control
 | **Clinic connectivity** | Direct Connect + VPN at the flagship clinic, Site-to-Site VPN at the rest | Encrypted links sized to each clinic's imaging volume |
 | **App** | Private Application Load Balancer, EC2 Auto Scaling | The vendor EHR and its patient portal and radiology module across three AZs |
 | **Integration** | HL7 interface engine on EC2 | Routes clinical messages; fenced off in its own tier |
-| **Data** | Amazon RDS for PostgreSQL (Multi-AZ) | Patient records, encrypted with KMS, with automatic failover |
-| **Imaging** | AWS HealthImaging, clinic DICOM routers | Managed DICOM store; routers cache at each clinic and upload over encrypted DICOMweb |
+| **Data** | Amazon Aurora PostgreSQL | Patient records with storage across three AZs, KMS encryption, query auditing, and immutable backups |
+| **Imaging** | AWS HealthImaging, clinic DICOM routers, OHIF viewer | Managed DICOM store; routers cache at each clinic, upload over encrypted DICOMweb, and keep a replicated S3 archive copy |
 | **Storage** | Amazon S3 | Documents: encrypted, versioned, retention-locked, aged to cheaper tiers |
-| **Identity** | IAM Identity Center, IAM roles, Amazon Cognito, ABAC | Admin single sign-on, no long-lived keys, patient portal sign-in, tag-based access to PHI |
+| **Identity** | Microsoft Entra ID, IAM Identity Center, IAM roles, ABAC | One staff identity with MFA, just-in-time admin access, no long-lived keys, tag-based access to PHI |
 | **Security & monitoring** | CloudTrail, GuardDuty, Security Hub, AWS Config, Inspector, Macie, CloudWatch | Audit trail, threat detection, compliance checks, vulnerability scans, PHI discovery, alarms |
-| **Resilience** | AWS Backup | Scheduled backups with a cross-region copy to us-east-1 |
+| **Resilience** | Aurora Global Database, AWS Backup with Vault Lock, S3 replication | Pilot light DR in us-east-1: EHR back in 4 hours with about a minute of data loss |
 | **Migration** | AWS Application Migration Service, AWS DMS, AWS DataSync | Moves the app servers, database, file shares, and imaging archive |
 
 ### Request flow
 
 ```
-Patient       → Route 53 → CloudFront + WAF → private ALB → EHR portal (EC2) → RDS / S3
-Remote staff  → Verified Access → private ALB → EHR (EC2) → RDS
+Patient       → Route 53 → CloudFront + WAF → private ALB → EHR portal (EC2) → Aurora / S3
+Remote staff  → Verified Access → private ALB → EHR (EC2) → Aurora
 Clinic staff  → Direct Connect or VPN → Transit Gateway → Network Firewall → EHR
 Imaging device → Clinic DICOM router → Direct Connect or VPN → AWS HealthImaging → Web viewer
 ```
@@ -116,7 +116,8 @@ Imaging device → Clinic DICOM router → Direct Connect or VPN → AWS HealthI
 | Terraform | Primary IaC: the full design, used for the live deploy | 🔜 Planned |
 | AWS CloudFormation | Network layer, written for comparison | 🔜 Planned |
 | AWS CDK | Network layer, written for comparison | 🔜 Planned |
-| Checkov | IaC security scanning | 🔜 Planned |
+| Checkov + TFLint | IaC security and lint scanning | 🔜 Planned |
+| GitHub Actions | Runs every scanner on each push | 🔜 Planned |
 | AWS Budgets + CloudWatch billing alarm | Deploy cost guardrail | 🔜 Planned |
 
 ## 🧭 Roadmap
@@ -125,12 +126,13 @@ Imaging device → Clinic DICOM router → Direct Connect or VPN → AWS HealthI
 |---|---|---|
 | **1 · Design** | Requirements · Current state · Shared responsibility map · ADRs · Cost estimate | Every rubric area has a written decision |
 | **2 · Diagram** | draw.io diagram with AWS icons, AZ boundaries, and numbered data flow | Diagram matches the design and the IaC |
-| **3 · IaC** | Terraform for the full design · CloudFormation and CDK for the network layer | `terraform plan` is clean; CloudFormation lints and CDK synthesizes |
+| **3 · IaC** | Terraform for the full design · CloudFormation and CDK for the network layer | Terraform validates and passes Checkov; CloudFormation lints; CDK synthesizes |
 | **4 · Deploy** | Billing alarm · Deploy the slice · Verify failover and access · Screenshot · Destroy | Slice verified and torn down for under $20 |
 | **5 · Present** | Slide deck · Recorded 8–10 minute briefing | Deck and video submitted |
 
 - [x] Repository created
 - [x] Design plan drafted
+- [x] Design review: every layer decided
 - [ ] Phase 1: Design
 - [ ] Phase 2: Diagram
 - [ ] Phase 3: IaC
