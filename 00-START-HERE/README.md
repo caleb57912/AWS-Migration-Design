@@ -34,3 +34,4 @@ Each step I completed, in order. Each entry has a short summary; the [deep dives
 | 01 | [Repository and design plan](01-repo-and-design-plan.md) | 1 · Design | ✅ Repo created, design plan written |
 | 02 | [Foundation design decisions](02-foundation-design-decisions.md) | 1 · Design | ✅ Accounts through workload placement decided |
 | 03 | [Full design review](03-full-design-review.md) | 1 · Design | ✅ Every layer decided |
+| 04 | [Cost estimate](04-cost-estimate.md) | 1 · Design | ✅ $6,645/month adjusted, every line sourced |

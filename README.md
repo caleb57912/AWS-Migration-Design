@@ -16,7 +16,7 @@
 > ### 👋 Start here: [**00-START-HERE →**](00-START-HERE/)
 > The project in 60 seconds, what to read in order, and the build log: every step I've completed, with the decisions, issues and fixes behind each one.
 >
-> - **Phase 1 Design 🔄** every layer decided and recorded in the design plan; ADRs, cost estimate, and diagram next
+> - **Phase 1 Design 🔄** every layer decided; cost estimate done at $6,645/month; diagram and ADRs next
 
 ## 🎯 Mission
 
@@ -112,7 +112,7 @@ Imaging device → Clinic DICOM router → Direct Connect or VPN → AWS HealthI
 | Tool | Purpose | Status |
 |---|---|---|
 | draw.io | Architecture diagram | 🔜 Planned |
-| AWS Pricing Calculator | Monthly cost estimate | 🔜 Planned |
+| AWS Pricing Calculator | Monthly cost estimate: [**$6,645/month**](docs/cost/README.md) | ✅ Done |
 | Terraform | Primary IaC: the full design, used for the live deploy | 🔜 Planned |
 | AWS CloudFormation | Network layer, written for comparison | 🔜 Planned |
 | AWS CDK | Network layer, written for comparison | 🔜 Planned |
@@ -133,6 +133,7 @@ Imaging device → Clinic DICOM router → Direct Connect or VPN → AWS HealthI
 - [x] Repository created
 - [x] Design plan drafted
 - [x] Design review: every layer decided
+- [x] Cost estimate
 - [ ] Phase 1: Design
 - [ ] Phase 2: Diagram
 - [ ] Phase 3: IaC
