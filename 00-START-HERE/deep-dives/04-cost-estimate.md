@@ -129,14 +129,7 @@ Full record of how I priced the Bayou Clinic Partners design. The finished estim
 
 ## Evidence
 
-Screenshots for this step go in `screenshots/build-log/04-cost-estimate/`:
-
-- Estimate summary with all 7 groups
-- Network Firewall pricing page (NAT waiver)
-- WAF Bot Control pricing table
-- Verified Access pricing table
-- DR AWS Backup calculation (daily vs. weekly)
-- Non-prod EBS calculation showing the 36% scaling trap
+95 Pricing Calculator screenshots, in the order I captured them, are in [`screenshots/build-log/04-cost-estimate/`](../../screenshots/build-log/04-cost-estimate). They cover every form, each fix, and the Show calculations output used to verify lines. The calculator holds no account data, so no redaction was needed.
 
 ## Backlog
 
@@ -144,5 +137,5 @@ Screenshots for this step go in `screenshots/build-log/04-cost-estimate/`:
 - [ ] Fill the CloudWatch description
 - [ ] Correct HealthImaging metadata fields to 50 MB / 2 series / 5 SOP
 - [ ] Add S3 data events to DR GuardDuty
-- [ ] Add redacted screenshots to the evidence folder
+- [x] Add screenshots to the evidence folder
 - [ ] Build a qualitative TCO comparison against an on-prem hardware refresh for the cost slide

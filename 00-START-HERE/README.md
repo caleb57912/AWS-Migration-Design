@@ -18,6 +18,7 @@ The design is written in Terraform. A slice of it is deployed live, tested by br
 
 | # | What | Why read it |
 |---|---|---|
+| 0 | [Final Report](../docs/final-report.md) | The whole recommendation, written for stakeholders |
 | 1 | [Design Plan](../docs/design-plan.md) | Every foundation in the design and the reason behind it |
 | 2 | [Architecture diagram](../diagrams) | The whole system on one page |
 | 3 | [Decision records](../docs/adr) | The trade-offs, and the alternatives I compared |

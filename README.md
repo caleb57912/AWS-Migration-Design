@@ -147,6 +147,7 @@ Every folder has a README describing what goes in it; the contents fill in as ea
 | Folder | What's inside |
 |---|---|
 | [`00-START-HERE/`](00-START-HERE) | **Overview, reading order, and the step-by-step build log** |
+| [`docs/final-report.md`](docs/final-report.md) | **Final report: the full recommendation in one document** |
 | [`docs/`](docs) | Design plan, requirements, shared responsibility map |
 | [`docs/adr/`](docs/adr) | Architecture decision records |
 | [`docs/cost/`](docs/cost) | Pricing Calculator estimate and optimization plan |
