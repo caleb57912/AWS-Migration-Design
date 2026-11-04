@@ -8,7 +8,7 @@ One file per major decision: the context, the options, what I chose, and why. Co
 |---|---|---|---|
 | 001 | Replatform the vendor EHR onto EC2 and Aurora | SaaS EHR | 🔜 |
 | [002](002-aurora-postgresql.md) | Aurora PostgreSQL | RDS PostgreSQL Multi-AZ, self-managed on EC2 | ✅ |
-| 003 | AWS HealthImaging | PACS software on EC2 with S3 | 🔜 |
+| [003](003-aws-healthimaging.md) | AWS HealthImaging | PACS software on EC2 with S3 | ✅ |
 | [004](004-multi-account-landing-zone.md) | Multi-account landing zone with Control Tower | Single account | ✅ |
 | [005](005-pilot-light-dr.md) | Pilot light DR in us-east-1 | Backup and restore, warm standby | ✅ |
 | [006](006-hybrid-direct-connect-vpn.md) | Hybrid Direct Connect + VPN | VPN only, Direct Connect everywhere | ✅ |
