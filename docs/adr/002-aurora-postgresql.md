@@ -1,6 +1,6 @@
 # ADR 002 · Aurora PostgreSQL
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-11-03
 
 ## Context

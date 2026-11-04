@@ -1,6 +1,6 @@
 # ADR 013 · MDR provider with Security Lake and a SIEM
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-11-03
 
 ## Context

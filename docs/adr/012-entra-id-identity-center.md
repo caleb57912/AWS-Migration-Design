@@ -1,6 +1,6 @@
 # ADR 012 · Entra ID federated to IAM Identity Center
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-11-03
 
 ## Context

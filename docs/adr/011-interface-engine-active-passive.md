@@ -1,6 +1,6 @@
 # ADR 011 · Interface engine active/passive behind an NLB
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-11-03
 
 ## Context

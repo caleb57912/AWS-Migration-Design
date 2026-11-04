@@ -1,6 +1,6 @@
 # ADR 010 · us-west-2 primary, us-east-1 DR
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-11-03
 
 ## Context

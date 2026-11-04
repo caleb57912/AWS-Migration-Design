@@ -1,6 +1,6 @@
 # ADR 007 · Terraform as primary IaC
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-11-03
 
 ## Context
