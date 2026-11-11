@@ -4,3 +4,9 @@ module "network" {
   cidr_block = "10.10.0.0/16"
   azs        = ["us-west-2a", "us-west-2b", "us-west-2c"]
 }
+
+module "security" {
+  source           = "../../modules/security"
+  name             = "bayou-slice"
+  enable_guardduty = var.enable_guardduty
+}

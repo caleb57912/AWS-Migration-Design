@@ -82,3 +82,40 @@ resource "aws_vpc_endpoint" "s3" {
   route_table_ids   = [aws_route_table.app.id, aws_route_table.integration.id, aws_route_table.data.id]
   tags              = { Name = "${var.name}-s3" }
 }
+
+locals {
+  app_and_integration_cidrs = concat(aws_subnet.app[*].cidr_block, aws_subnet.integration[*].cidr_block)
+}
+
+# Data tier boundary: only app and integration subnets reach PostgreSQL.
+# NACLs are stateless, so replies need their own outbound rule on ephemeral ports.
+resource "aws_network_acl" "data" {
+  vpc_id     = aws_vpc.this.id
+  subnet_ids = aws_subnet.data[*].id
+
+  dynamic "ingress" {
+    for_each = local.app_and_integration_cidrs
+    content {
+      rule_no    = 100 + ingress.key
+      protocol   = "tcp"
+      action     = "allow"
+      cidr_block = ingress.value
+      from_port  = 5432
+      to_port    = 5432
+    }
+  }
+
+  dynamic "egress" {
+    for_each = local.app_and_integration_cidrs
+    content {
+      rule_no    = 100 + egress.key
+      protocol   = "tcp"
+      action     = "allow"
+      cidr_block = egress.value
+      from_port  = 1024
+      to_port    = 65535
+    }
+  }
+
+  tags = { Name = "${var.name}-data" }
+}
